@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clasificador de Animales</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f4f9;
+            --surface: #ffffff;
+            --surface2: #eeecf6;
+            --border: #dcd9ee;
+            --accent: #7c6fc9;
+            --accent2: #5f51b5;
+            --text: #1e1a35;
+            --text-muted: #8b85aa;
+            --danger: #e05c5c;
+            --gold: #b09ae0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,111,201,0.10) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 80% 90%, rgba(95,81,181,0.07) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 56px;
+            animation: fadeDown 0.7s ease both;
+        }
+
+        .header-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            border: 1px solid rgba(123,219,142,0.3);
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.4rem, 6vw, 4rem);
+            font-weight: 900;
+            line-height: 1.05;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .subtitle {
+            margin-top: 14px;
+            font-size: 15px;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            background: var(--surface);
+            border: 1.5px dashed var(--border);
+            border-radius: 20px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+            animation: fadeUp 0.7s 0.1s ease both;
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(123,219,142,0.04);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .upload-zone h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Preview */
+        #preview-wrap {
+            display: none;
+            margin-top: 24px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1.5px solid var(--border);
+            animation: fadeUp 0.4s ease both;
+        }
+
+        #preview-wrap img {
+            width: 100%;
+            max-height: 340px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-bar {
+            background: var(--surface2);
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-bar span { color: var(--text); font-weight: 500; }
+
+        /* Predict button */
+        .btn-predict {
+            width: 100%;
+            margin-top: 20px;
+            padding: 18px;
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            animation: fadeUp 0.7s 0.2s ease both;
+        }
+
+        .btn-predict:hover { background: var(--accent2); transform: translateY(-2px); }
+        .btn-predict:active { transform: translateY(0); }
+        .btn-predict:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Results */
+        #resultados {
+            margin-top: 40px;
+        }
+
+        .results-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        .results-header small {
+            display: block;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 300;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .modelos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .modelos-grid { grid-template-columns: 1fr; }
+        }
+
+        .modelo-card {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .modelo-card:nth-child(2) { animation-delay: 0.08s; }
+
+        .card-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .animal-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-transform: capitalize;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .confianza-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .confianza-badge {
+            background: rgba(124,111,201,0.12);
+            color: var(--accent);
+            border: 1px solid rgba(124,111,201,0.3);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .confianza-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .prob-title {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .prob-item {
+            margin-bottom: 12px;
+        }
+
+        .prob-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .prob-animal {
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .prob-pct {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .bar-track {
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: var(--accent);
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .bar-fill.low { background: var(--text-muted); }
+        .bar-fill.high { background: var(--accent); }
+
+        /* Chart */
+        .chart-wrap {
+            margin-top: 32px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            animation: fadeUp 0.5s 0.15s ease both;
+        }
+
+        .chart-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .chart-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        #grafica {
+            width: 100%;
+            border-radius: 10px;
+            display: block;
+        }
+
+        /* Error */
+        .error-box {
+            background: rgba(244,132,95,0.08);
+            border: 1.5px solid rgba(244,132,95,0.3);
+            border-radius: 14px;
+            padding: 20px 24px;
+            color: var(--danger);
+            font-size: 14px;
+        }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <header>
+        <div class="header-tag">CNN · Visión Artificial</div>
+        <h1>Clasificador de<br><span>Animales</span></h1>
+        <p class="subtitle">Sube una imagen y dos modelos CNN la analizarán en tiempo real</p>
+    </header>
+
+    <div class="upload-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*">
+        <span class="upload-icon">🦁</span>
+        <h3>Arrastra o selecciona una imagen</h3>
+        <p>Oso · Rata · Cuervo · Elefante — JPG, PNG, WEBP</p>
+    </div>
+
+    <div id="preview-wrap">
+        <img id="preview" src="" alt="Preview">
+        <div class="preview-bar">📷 <span id="filename">imagen.jpg</span></div>
+    </div>
+
+    <button class="btn-predict" onclick="enviarImagen()">Analizar imagen →</button>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        Procesando con los modelos…
+    </div>
+
+    <div id="resultados"></div>
+
+</div>
+
+<script>
+    const LABELS = { 0: "oso", 1: "cuervo", 2: "elefante", 3: "rata" };
+
+    const fileInput = document.getElementById("fileInput");
+    const preview = document.getElementById("preview");
+    const previewWrap = document.getElementById("preview-wrap");
+    const dropZone = document.getElementById("dropZone");
+
+    fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (file) showPreview(file);
+    });
+
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file) { fileInput.files = e.dataTransfer.files; showPreview(file); }
+    });
+
+    function showPreview(file) {
+        preview.src = URL.createObjectURL(file);
+        document.getElementById("filename").textContent = file.name;
+        previewWrap.style.display = "block";
+    }
+
+    function buildCard(data, titulo, delay) {
+        const probs = data.probabilidades;
+        const max = Math.max(...probs);
+
+        let probsHTML = '';
+        probs.forEach((p, i) => {
+            const pct = (p * 100).toFixed(1);
+            const isTop = p === max;
+            probsHTML += `
+                <div class="prob-item">
+                    <div class="prob-row">
+                        <span class="prob-animal" style="${isTop ? 'color:var(--accent)' : ''}">${LABELS[i]}</span>
+                        <span class="prob-pct">${pct}%</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill ${p > 0.5 ? 'high' : 'low'}" style="width:${pct}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        return `
+            <div class="modelo-card" style="animation-delay:${delay}s">
+                <div class="card-label">${titulo}</div>
+                <div class="animal-name">${data.animal}</div>
+                <div class="confianza-row">
+                    <span class="confianza-badge">${(data.confianza * 100).toFixed(2)}%</span>
+                    <span class="confianza-label">confianza</span>
+                </div>
+                <hr class="divider">
+                <div class="prob-title">Distribución de probabilidades</div>
+                ${probsHTML}
+            </div>`;
+    }
+
+    async function enviarImagen() {
+        const file = fileInput.files[0];
+        if (!file) { alert("Selecciona una imagen primero"); return; }
+
+        const btn = document.querySelector(".btn-predict");
+        const loading = document.getElementById("loading");
+        const resultados = document.getElementById("resultados");
+
+        btn.disabled = true;
+        loading.style.display = "block";
+        resultados.innerHTML = "";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await fetch("/predict", { method: "POST", body: formData });
+            const data = await response.json();
+
+            loading.style.display = "none";
+            btn.disabled = false;
+
+            if (data.error) {
+                resultados.innerHTML = `<div class="error-box">⚠️ ${data.error}</div>`;
+                return;
+            }
+
+            const card1 = buildCard(data.modelo1, "Modelo 1 — CNN desde cero", 0);
+            const card2 = buildCard(data.modelo2, "Modelo 2 — Preentrenado", 0.08);
+
+            resultados.innerHTML = `
+                <div class="results-header">
+                    Resultados
+                    <small>Ambos modelos han procesado la imagen</small>
+                </div>
+                <div class="modelos-grid">${card1}${card2}</div>
+                <div class="chart-wrap">
+                    <div class="chart-title">Comparación visual</div>
+                    <div class="chart-sub">Probabilidades por clase en ambos modelos</div>
+                    <img id="grafica" src="data:image/png;base64,${data.grafica}" alt="Gráfica comparativa">
+                </div>`;
+
+        } catch (err) {
+            loading.style.display = "none";
+            btn.disabled = false;
+            resultados.innerHTML = `<div class="error-box">⚠️ Error al conectar con el servidor</div>`;
+        }
+    }
+</script>
+
+</body>
+</html>
