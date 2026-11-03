@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+.vscode
+.claude
+__pycache__
+*.pyc
+*.h5
+installed.txt
+README.md
+Dockerfile
+.dockerignore
+.env
